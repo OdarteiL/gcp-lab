@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Places</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        img {
+            max-width: 800px;
+            width: 90%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Random Places Around the World</h1>
+    <img id="placeImage" alt="Random place">
+    <button onclick="loadRandomPlace()">Show Another Place</button>
+
+    <script>
+        const places = [
+            { name: 'Paris', url: 'https://picsum.photos/800/600?random=1' },
+            { name: 'Tokyo', url: 'https://picsum.photos/800/600?random=2' },
+            { name: 'New York', url: 'https://picsum.photos/800/600?random=3' },
+            { name: 'London', url: 'https://picsum.photos/800/600?random=4' },
+            { name: 'Sydney', url: 'https://picsum.photos/800/600?random=5' },
+            { name: 'Dubai', url: 'https://picsum.photos/800/600?random=6' },
+            { name: 'Barcelona', url: 'https://picsum.photos/800/600?random=7' },
+            { name: 'Rome', url: 'https://picsum.photos/800/600?random=8' }
+        ];
+
+        function loadRandomPlace() {
+            const place = places[Math.floor(Math.random() * places.length)];
+            const img = document.getElementById('placeImage');
+            img.src = place.url;
+            img.alt = place.name;
+        }
+
+        loadRandomPlace();
+    </script>
+</body>
+</html>

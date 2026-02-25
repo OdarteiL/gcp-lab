@@ -1,0 +1,34 @@
+stages:
+  - test
+  - deploy
+
+variables:
+  DEPLOY_PATH: /var/www/html
+
+test:
+  stage: test
+  image: alpine:latest
+  script:
+    - echo 'Running basic validation...'
+    - test -f app/index.html && echo 'index.html exists'
+    - grep -q 'Random Places' app/index.html && echo 'Content check passed'
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  image: google/cloud-sdk:alpine
+  before_script:
+    - echo $GCP_SERVICE_KEY > /tmp/gcp_key.json
+    - gcloud auth activate-service-account --key-file=/tmp/gcp_key.json
+    - gcloud config set project $GCP_PROJECT_ID
+  script:
+    - echo 'Copying files to VM...'
+    - gcloud compute scp app/index.html $VM_NAME:/tmp/ --zone=$GCP_ZONE
+    - gcloud compute ssh $VM_NAME --zone=$GCP_ZONE --command="sudo mv /tmp/index.html $DEPLOY_PATH/index.html"
+    - echo 'Deployment complete!'
+  only:
+    - main
+  environment:
+    name: production
+    url: http://$VM_EXTERNAL_IP
