@@ -18,8 +18,13 @@ variables:
 # Stage 1: Validate Terraform
 tf:validate:
   stage: validate
-  image: hashicorp/terraform:latest
-  <<: *gcp_auth
+  image: google/cloud-sdk:latest
+  before_script:
+    - apt-get update && apt-get install -y unzip curl
+    - curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o tf.zip
+    - unzip tf.zip && mv terraform /usr/local/bin/
+    - echo $GCP_SERVICE_KEY > /tmp/gcp_key.json
+    - export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
   script:
     - cd $TF_DIR
     - terraform init -backend=false
