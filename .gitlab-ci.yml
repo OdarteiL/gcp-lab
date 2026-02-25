@@ -1,34 +1,83 @@
 stages:
-  - test
+  - validate
+  - plan
+  - apply
   - deploy
 
 variables:
+  TF_DIR: './terraform'
   DEPLOY_PATH: /var/www/html
 
-test:
-  stage: test
-  image: alpine:latest
-  script:
-    - echo 'Running basic validation...'
-    - test -f app/index.html && echo 'index.html exists'
-    - grep -q 'Random Places' app/index.html && echo 'Content check passed'
-  only:
-    - main
-
-deploy:
-  stage: deploy
-  image: google/cloud-sdk:alpine
+.gcp_auth: &gcp_auth
   before_script:
     - echo $GCP_SERVICE_KEY > /tmp/gcp_key.json
     - gcloud auth activate-service-account --key-file=/tmp/gcp_key.json
     - gcloud config set project $GCP_PROJECT_ID
+    - export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
+
+# Stage 1: Validate Terraform
+tf:validate:
+  stage: validate
+  image: hashicorp/terraform:latest
+  <<: *gcp_auth
+  script:
+    - cd $TF_DIR
+    - terraform init -backend=false
+    - terraform validate
+  only:
+    - merge_requests
+    - main
+
+# Stage 2: Terraform Plan
+tf:plan:
+  stage: plan
+  image: google/cloud-sdk:latest
+  <<: *gcp_auth
+  script:
+    - apt-get update && apt-get install -y unzip curl
+    - curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o tf.zip
+    - unzip tf.zip && mv terraform /usr/local/bin/
+    - cd $TF_DIR
+    - terraform init
+    - terraform plan -var="project_id=$GCP_PROJECT_ID" -out=tfplan
+  artifacts:
+    paths:
+      - terraform/tfplan
+    expire_in: 1 hour
+  only:
+    - main
+
+# Stage 3: Terraform Apply (manual approval for safety)
+tf:apply:
+  stage: apply
+  image: google/cloud-sdk:latest
+  <<: *gcp_auth
+  script:
+    - apt-get update && apt-get install -y unzip curl
+    - curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o tf.zip
+    - unzip tf.zip && mv terraform /usr/local/bin/
+    - cd $TF_DIR
+    - terraform init
+    - terraform apply -auto-approve tfplan
+  dependencies:
+    - tf:plan
+  when: manual
+  only:
+    - main
+  environment:
+    name: infrastructure
+
+# Stage 4: Deploy App
+deploy:
+  stage: deploy
+  image: google/cloud-sdk:alpine
+  <<: *gcp_auth
   script:
     - echo 'Copying files to VM...'
-    - gcloud compute scp app/index.html $VM_NAME:/tmp/index.html --zone=$GCP_ZONE
-    - gcloud compute ssh $VM_NAME --zone=$GCP_ZONE --command="sudo mv /tmp/index.html $DEPLOY_PATH/index.html"
+    - gcloud compute scp app/index.html tf-web-server:/tmp/index.html --zone=$GCP_ZONE
+    - gcloud compute ssh tf-web-server --zone=$GCP_ZONE --command="sudo mv /tmp/index.html $DEPLOY_PATH/index.html"
     - echo 'Deployment complete!'
   only:
     - main
   environment:
     name: production
-    url: http://$VM_EXTERNAL_IP
