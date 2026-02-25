@@ -22,7 +22,7 @@ tf:validate:
   before_script:
     - apt-get update && apt-get install -y unzip curl
     - curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o tf.zip
-    - unzip tf.zip && mv terraform /usr/local/bin/
+    - unzip -o tf.zip && mv terraform /usr/local/bin/
     - echo $GCP_SERVICE_KEY > /tmp/gcp_key.json
     - export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_key.json
   script:
@@ -41,7 +41,7 @@ tf:plan:
   script:
     - apt-get update && apt-get install -y unzip curl
     - curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o tf.zip
-    - unzip tf.zip && mv terraform /usr/local/bin/
+    - unzip -o tf.zip && mv terraform /usr/local/bin/
     - cd $TF_DIR
     - terraform init
     - terraform plan -var="project_id=$GCP_PROJECT_ID" -out=tfplan
@@ -60,7 +60,7 @@ tf:apply:
   script:
     - apt-get update && apt-get install -y unzip curl
     - curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o tf.zip
-    - unzip tf.zip && mv terraform /usr/local/bin/
+    - unzip -o tf.zip && mv terraform /usr/local/bin/
     - cd $TF_DIR
     - terraform init
     - terraform apply -auto-approve tfplan
