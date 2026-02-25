@@ -23,16 +23,10 @@ deploy:
     - gcloud auth activate-service-account --key-file=/tmp/gcp_key.json
     - gcloud config set project $GCP_PROJECT_ID
   script:
-    - echo 'Deploying via instance metadata...'
-    - |
-      gcloud compute instances add-metadata $VM_NAME \
-        --zone=$GCP_ZONE \
-        --metadata=startup-script="#!/bin/bash
-      cat > $DEPLOY_PATH/index.html << 'HTMLEOF'
-      $(cat app/index.html)
-      HTMLEOF"
-    - gcloud compute instances reset $VM_NAME --zone=$GCP_ZONE
-    - echo 'Deployment complete! VM is restarting...'
+    - echo 'Copying files to VM...'
+    - gcloud compute scp app/index.html $VM_NAME:/tmp/index.html --zone=$GCP_ZONE
+    - gcloud compute ssh $VM_NAME --zone=$GCP_ZONE --command="sudo mv /tmp/index.html $DEPLOY_PATH/index.html"
+    - echo 'Deployment complete!'
   only:
     - main
   environment:
